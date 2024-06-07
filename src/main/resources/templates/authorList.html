@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Commit Statistics</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h2>Commit Statistics</h2>
+
+<input type="text" id="authorInput" onkeyup="filterTable()" placeholder="Search for author...">
+<br><br>
+<label for="startDate">Start Date:</label>
+<input type="date" id="startDate">
+<label for="endDate">End Date:</label>
+<input type="date" id="endDate">
+<button onclick="filterTable()">Filter</button>
+
+<table id="commitTable" border="1">
+    <thead>
+    <tr>
+        <th>Author</th>
+        <th>Commit Count</th>
+        <th>Date</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="entry : ${authorList}">
+        <td th:text="${entry.key}"></td>
+        <td th:text="${entry.value}"></td>
+        <td>Put commitEntity date here</td>
+    </tr>
+    </tbody>
+</table>
+
+
+<script>
+    function filterTable() {
+        var input, filter, table, tr, td, i, txtValue, startDate, endDate;
+        input = document.getElementById("authorInput");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("commitTable");
+        tr = table.getElementsByTagName("tr");
+        startDate = document.getElementById("startDate").value;
+        endDate = document.getElementById("endDate").value;
+        for (i = 0; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[0]; // Предполагается, что имя автора находится в первом столбце
+            console.log(td);
+            var commitDate = tr[i].getElementsByTagName("td")[2]; // Предполагается, что дата коммита находится в третьем столбце
+            if (td && commitDate) {
+                txtValue = td.textContent || td.innerText;
+                if ((txtValue.toUpperCase().indexOf(filter) > -1) && (!startDate || !endDate || (commitDate.innerText >= startDate && commitDate.innerText <= endDate))) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Анализ Гит Репозиториев</title>
+    <link rel="stylesheet" type="text/css" th:href="@{style.css}">
+</head>
+<body>
+<div class="logout-form">
+    <form th:action="@{/logout}" method="post">
+        <input type="submit" value="Выход"/>
+    </form>
+</div>
+<h1>Приложение для анализа проектов Git.</h1>
+<p>Здесь можно добавлять репозитории для анализа.</p>
+
+<a th:href="@{/repositoryRegistration}" class="btn">Добавить репозиторий</a>
+
+<h2>Список репозиториев:</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Название</th>
+        <th>Ветка</th>
+        <th>Удалить</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="repository : ${repositories}">
+        <td><a th:href="@{'/statistic/' + ${repository.id}}" th:text="${repository.name}"></a></td>
+        <td><a th:text="${repository.analyze_branch}"></a></td>
+        <td>
+            <form th:action="@{'/deleteRepository/' + ${repository.id}}" method="post" style="display:inline;">
+                <button type="submit" style="background:none; border:none; color:red; cursor:pointer;">&times;</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>

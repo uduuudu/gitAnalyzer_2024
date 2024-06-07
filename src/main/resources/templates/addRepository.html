@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Анализ Гит Репозиториев</title>
+</head>
+<body>
+
+<h2>Форма ввода URL и пути до папки</h2>
+<form th:action="@{/addingRepo}" method="post">
+    <label for="url">URL:</label>
+    <input type="text" id="url" name="url" required>
+
+    <label for="folderPath">Путь до папки:</label>
+    <input type="text" id="folderPath" name="folderPath" required>
+
+    <button type="submit">Добавить</button>
+</form>
+
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Статистика коммитов</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .container {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 30%; /* Устанавливаем ширину боковой панели */
+            padding: 20px;
+        }
+
+        .content {
+            width: 70%; /* Устанавливаем ширину контента */
+            padding: 20px;
+        }
+    </style>
+    <script>
+        function filterStatistics() {
+            var startDate = document.getElementById("startDate").value;
+            var endDate = document.getElementById("endDate").value;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/mapping/4?startDate=" + startDate + "&endDate=" + endDate, true);
+            //xhr.open("GET", "/mapping", true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    var response = xhr.responseText;
+                    document.getElementById("statisticsTable").innerHTML = response;
+                }
+            };
+            xhr.send();
+        }
+
+        function filterTable() {
+            var input, filter, table, tr, td, i, txtValue, startDate, endDate;
+            input = document.getElementById("authorInput");
+            filter = input.value.toUpperCase();
+            table = document.getElementById("commitTable");
+            tr = table.getElementsByTagName("tr");
+            startDate = document.getElementById("startDate").value;
+            endDate = document.getElementById("endDate").value;
+            for (i = 0; i < tr.length; i++) {
+                td = tr[i].getElementsByTagName("td")[0]; // Предполагается, что имя автора находится в первом столбце
+                console.log(td);
+                var commitDate = tr[i].getElementsByTagName("td")[2]; // Предполагается, что дата коммита находится в третьем столбце
+                if (td && commitDate) {
+                    txtValue = td.textContent || td.innerText;
+                    if ((txtValue.toUpperCase().indexOf(filter) > -1) && (!startDate || !endDate || (commitDate.innerText >= startDate && commitDate.innerText <= endDate))) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <h1>Статистика коммитов</h1>
+        <input type="text" id="authorInput" onkeyup="filterTable()" placeholder="Search for author...">
+
+        <form id="filterForm">
+            <label for="startDate">Начальная дата:</label>
+            <input type="date" id="startDate" name="startDate">
+
+            <label for="endDate">Конечная дата:</label>
+            <input type="date" id="endDate" name="endDate">
+
+            <button type="button" onclick="filterStatistics()">Показать статистику</button>
+        </form>
+    </div>
+
+    <div class="content">
+        <div th:fragment="statisticsTable1" id= "statisticsTable">
+            <h1>Табличка :)</h1>
+            <table>
+                <thead>
+                <tr>
+                    <th>Автор</th>
+                    <th>Количество коммитов</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="entry : ${authorList}">
+                    <td th:text="${entry.key}"></td>
+                    <td th:text="${entry.value}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

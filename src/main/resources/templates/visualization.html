@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Статистика репозитория</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.0.0"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+        .chart-container, .table-container, .table-container-avg {
+            width: 100%;
+            max-width: 45%;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        button, select, input[type="date"] {
+            margin: 5px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f9;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 500px;
+            height: 65px;
+            padding: 2px;
+            font: 12px sans-serif;
+            background: #6e9ad5;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .node {
+            font: 10px sans-serif;
+            transition: all 0.3s ease-in-out;
+        }
+        .node rect {
+            fill-opacity: 0.8;
+            stroke: #fff;
+            stroke-width: 1px;
+        }
+        .node text {
+            pointer-events: none;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        #changeDistributionChart {
+            margin-top: 20px;
+        }
+    </style>
+
+</head>
+<body>
+
+<h1>Статистика репозитория</h1>
+
+<div class="container">
+    <div class="chart-container">
+        <h2>Динамика коммитов</h2>
+        <button id="loadYearsButton">Коммиты по дням</button>
+        <select name="year" id="yearSelect">
+            <option value="">Выберите год</option>
+            <option th:each="year : ${years}" th:value="${year}" th:text="${year}"></option>
+        </select>
+        <canvas id="commitsChart"></canvas>
+        <form id="dateRangeFormForChart">
+            <input type="date" name="startDateForChart" id="startDateForChart">
+            <input type="date" name="endDateForChart" id="endDateForChart">
+            <button type="submit">Выбрать диапазон дат</button>
+        </form>
+    </div>
+    <div class="table-container">
+        <h2>Количество коммитов по автору</h2>
+        <form id="dateRangeForm">
+            <input type="date" name="startDate">
+            <input type="date" name="endDate">
+            <button type="submit">Выбрать</button>
+        </form>
+        <table id="commitTable">
+            <thead>
+            <tr>
+                <th>Автор</th>
+                <th>Число коммитов</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="entry : ${commitCountMap}">
+                <td th:text="${entry.key}"></td>
+                <td th:text="${entry.value}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="table-container-avg">
+        <h2>Средний размер коммитов по автору</h2>
+        <form id="dateRangeFormAvg">
+            <input type="date" name="startDateAvg">
+            <input type="date" name="endDateAvg">
+            <button type="submit">Выбрать</button>
+        </form>
+        <table id="commitTableAvg">
+            <thead>
+            <tr>
+                <th>Автор</th>
+                <th>Средний размер коммита</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="entry : ${avgSizeCommitsMap}">
+                <td th:text="${entry.key}"></td>
+                <td th:text="${entry.value}"></td>
+            </tr>
+            </tbody>
+
+        </table>
+    </div>
+    <canvas id="changeDistributionChart"></canvas>
+</div>
+
+<h2>Активность файлов</h2>
+<div id="treeMap"></div>
+<div id="tooltip" class="tooltip"></div>
+
+<script th:inline="javascript">
+
+    //////////////////////////////////////
+    /////////////////////////////////////
+
+    /*<![CDATA[*/
+    const commitsData = /*[[${commitsByDay}]]*/ {};
+    /*]]>*/
+    var projectId = [[${projectId}]];
+
+
+    const ctx = document.getElementById('commitsChart').getContext('2d');
+
+    const labels = Object.keys(commitsData);
+    const data = Object.values(commitsData);
+
+    let commitsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Коммиты по дням',
+                data: data,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day',
+                        tooltipFormat: 'yyyy-MM-dd'
+                    }
+                }
+            }
+        }
+    });
+
+    $('#yearSelect').change(function() {
+        const selectedYear = $(this).val();
+
+        if (selectedYear) {
+            $.ajax({
+                url: '/getChartData',
+                type: 'GET',
+                data: {selectedYear: selectedYear, projectId: projectId},
+                success: function(response) {
+                    const monthNames = ["January", "February", "March", "April", "May", "June", "July",
+                        "August", "September", "October", "November", "December"];
+                    const labels = monthNames.map((month, index) => moment({ year: selectedYear, month: index }).format('YYYY-MM'));
+                    const data = monthNames.map(month => response[month.toUpperCase()] || 0);
+
+                    commitsChart.data.labels = labels;
+                    commitsChart.data.datasets[0].data = data;
+                    commitsChart.data.datasets[0].label = `Коммиты в ${selectedYear}`;
+                    commitsChart.options.scales.x.time.unit = 'month';
+                    commitsChart.options.scales.x.time.tooltipFormat = 'MMMM';
+                    commitsChart.update();
+                },
+                error: function(error) {
+                    console.log('Error fetching commitEntities data:', error);
+                }
+            });
+        } else {
+            // Очистить график, если не выбран год
+            commitsChart.data.labels = [];
+            commitsChart.data.datasets[0].data = [];
+            commitsChart.update();
+        }
+    });
+
+    // Обработчик для кнопки сброса графика
+    document.getElementById('loadYearsButton').addEventListener('click', function() {
+        // Сброс данных к исходному состоянию
+        commitsChart.data.labels = Object.keys(commitsData);
+        commitsChart.data.datasets[0].data = Object.values(commitsData);
+        commitsChart.data.datasets[0].label = 'Коммиты по дням';
+        commitsChart.options.scales.x.time.unit = 'day';
+        commitsChart.options.scales.x.time.tooltipFormat = 'yyyy-MM-dd';
+        commitsChart.update();
+
+    });
+
+    // Обработчик для формы выбора диапазона дат
+    document.getElementById('dateRangeFormForChart').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const startDate = document.getElementById('startDateForChart').value;
+        const endDate = document.getElementById('endDateForChart').value;
+
+        if (startDate && endDate) {
+            $.ajax({
+                url: '/getChartDataByDateRange',
+                type: 'GET',
+                data: {
+                    projectId: projectId,
+                    startDate: startDate,
+                    endDate: endDate
+                },
+                success: function(response) {
+                    const labels = Object.keys(response);
+                    const data = Object.values(response);
+
+                    commitsChart.data.labels = labels;
+                    commitsChart.data.datasets[0].data = data;
+                    commitsChart.data.datasets[0].label = `Коммиты с ${startDate} по ${endDate}`;
+                    commitsChart.options.scales.x.time.unit = 'day';
+                    commitsChart.options.scales.x.time.tooltipFormat = 'yyyy-MM-dd';
+                    commitsChart.update();
+                },
+                error: function(error) {
+                    console.log('Error fetching commitEntities data:', error);
+                }
+            });
+        } else {
+            console.log('Both start and end date must be selected.');
+        }
+    });
+///////////////////////////////////////
+    ////////////////////////////////////
+
+
+    $(document).ready(function() {
+            $('#dateRangeForm').submit(function(event) {
+            event.preventDefault();
+            //var formData = $(this).serialize();
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+            var projectId = [[${projectId}]];
+
+            var formData = $(this).serialize();
+
+            // Добавление projectId к сериализованным данным
+            formData += '&projectId=' + projectId;
+
+
+            $.ajax({
+                type: 'GET',
+                url: '/getTableDataByDateRange',
+                data: formData,
+                dataType: 'json',
+                success: function(data) {
+                    updateTable(data);
+                },
+                error: function(xhr, status, error) {
+                    console.error(xhr.responseText);
+                }
+            });
+        });
+
+        function updateTable(data) {
+            // Очистить существующие данные в таблице
+            $('#commitTable tbody').empty();
+
+            // Заполнить таблицу данными из полученного объекта JSON
+            $.each(data, function(author, commitEntities) {
+                var row = '<tr><td>' + author + '</td><td>' + commitEntities + '</td></tr>';
+                $('#commitTable tbody').append(row);
+            });
+        }
+
+
+            $('#dateRangeFormAvg').submit(function (event) {
+                event.preventDefault();
+                var startDate = $('#startDateAvg').val();
+                var endDate = $('#endDateAvg').val();
+                var projectId = [[${projectId}]];
+
+                var formData = $(this).serialize();
+
+                formData += '&projectId=' + projectId;
+
+
+                $.ajax({
+                    type: 'GET',
+                    url: '/getAvgTableDataByDateRange',
+                    data: formData,
+                    dataType: 'json',
+                    success: function (data) {
+                        // Обновление таблицы с полученными данными
+                        updateTableAvg(data);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error(xhr.responseText);
+                    }
+                });
+            });
+
+            function updateTableAvg(data) {
+                // Очистить существующие данные в таблице
+                $('#commitTableAvg tbody').empty();
+
+                // Заполнить таблицу данными из полученного объекта JSON
+                $.each(data, function (author, commitEntities) {
+                    var row = '<tr><td>' + author + '</td><td>' + commitEntities + '</td></tr>';
+                    $('#commitTableAvg tbody').append(row);
+                });
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        const ctxChange = document.getElementById('changeDistributionChart').getContext('2d');
+        const changeDistr = /*[[${changeDistr}]]*/ {};
+
+        const labels = Object.keys(changeDistr);
+        const data = Object.values(changeDistr);
+
+        new Chart(ctxChange, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Распределение изменений',
+                    data: data,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+
+
+
+    /*<![CDATA[*/
+    var fileActivityData = /*[[${fileActivity}]]*/ {};
+
+    if (!fileActivityData) {
+        console.error("fileActivityData is undefined");
+        fileActivityData = {};
+    }
+
+    // Преобразование данных в формат, который использует d3.js
+    var dataa = {
+        name: "files",
+        children: Object.keys(fileActivityData).map(function(key) {
+            return { name: key, value: fileActivityData[key] };
+        })
+    };
+
+    // Создание TreeMap с использованием d3.js
+    var margin = {top: 10, right: 10, bottom: 10, left: 10},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    var color = d3.scaleSequential(d3.interpolateViridis)
+        .domain([0, d3.max(Object.values(fileActivityData))]);
+
+    var treemap = d3.treemap()
+        .size([width, height])
+        .padding(1)
+        .round(true);
+
+    var svg = d3.select("#treeMap").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var root = d3.hierarchy(dataa)
+        .sum(function(d) { return d.value; })
+        .sort(function(a, b) { return b.height - a.height || b.value - a.value; });
+
+    treemap(root);
+
+    var cell = svg.selectAll("g")
+        .data(root.leaves())
+        .enter().append("g")
+        .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; })
+        .attr("class", "node");
+
+    cell.append("rect")
+        .attr("id", function(d) { return d.data.name; })
+        .attr("width", function(d) { return d.x1 - d.x0; })
+        .attr("height", function(d) { return d.y1 - d.y0; })
+        .attr("fill", function(d) { return color(d.data.value); })
+        .on("mouseover", function(event, d) {
+            d3.select(this).style("fill-opacity", 1);
+            tooltip.style("opacity", 1);
+            tooltip.html(d.data.name + "<br>" + d.data.value)
+                .style("left", (event.pageX + 5) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function(d) {
+            d3.select(this).style("fill-opacity", 0.8);
+            tooltip.style("opacity", 0);
+        });
+
+    cell.append("text")
+        .attr("x", 3)
+        .attr("y", 15)
+        .text(function(d) { return d.data.name; })
+        .attr("fill", "white");
+
+    var tooltip = d3.select("#tooltip");
+
+    d3.selectAll("rect").on("mousemove", function(event) {
+        tooltip.style("left", (event.pageX + 5) + "px")
+            .style("top", (event.pageY - 28) + "px");
+    });
+
+    /*]]>*/
+
+
+</script>
+
+</body>
+</html>

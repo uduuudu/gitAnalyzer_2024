@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Регистрация репозитория</title>
+    <link rel="stylesheet" type="text/css" th:href="@{style.css}">
+
+</head>
+<body>
+<nav>
+    <a href="/home">Главная</a>
+</nav>
+<h1>Регистрация репозитория</h1>
+<form th:action="@{/repositoryRegistration}" method="post">
+    <div>
+        <label>URL репозитория:</label>
+        <input type="text" name="url" required/>
+    </div>
+    <div>
+        <label>Директория для клонирования:</label>
+        <input type="text" name="directory" required/>
+    </div>
+    <div>
+        <label>Название репозитория:</label>
+        <input type="text" name="name"/>
+    </div>
+    <div>
+        <label>Названия ветки для анализа:</label>
+        <input type="text" name="branch"/>
+    </div>
+    <div>
+        <button type="submit">Зарегистрировать репозиторий</button>
+    </div>
+</form>
+</body>
+</html>

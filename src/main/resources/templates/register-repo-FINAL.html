@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TreeMap with D3.js</title>
+    <style>
+        .node {
+            border: 1px solid #fff;
+            font: 10px sans-serif;
+            line-height: 12px;
+            overflow: hidden;
+            position: absolute;
+            text-indent: 2px;
+        }
+    </style>
+</head>
+<body>
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script src="https://d3js.org/d3-hierarchy.v1.min.js"></script>
+<script src="https://d3js.org/d3-scale.v3.min.js"></script>
+<script src="https://d3js.org/d3-selection.v2.min.js"></script>
+<script src="https://d3js.org/d3-transition.v2.min.js"></script>
+<script>
+    const data = {
+        "name": "root",
+        "children": [
+            {
+                "name": "child1",
+                "children": [
+                    { "name": "child1.1", "value": 100 },
+                    { "name": "child1.2", "value": 50 }
+                ]
+            },
+            {
+                "name": "child2",
+                "value": 200
+            }
+        ]
+    };
+
+    const width = 960;
+    const height = 570;
+
+    const treemap = d3.treemap()
+        .size([width, height])
+        .padding(1)
+        .round(true);
+
+    const color = d3.scaleOrdinal()
+        .domain(["root", "child1", "child1.1", "child1.2", "child2"])
+        .range(d3.schemeCategory10);
+
+    const root = d3.hierarchy(data)
+        .eachBefore(d => { d.data.id = (d.parent ? d.parent.data.id + "." : "") + d.data.name; })
+        .sum(d => d.value)
+        .sort((a, b) => b.height - a.height || b.value - a.value);
+
+    root.children.forEach(collapse); // Начальное сворачивание всех узлов
+
+    function collapse(d) {
+        if (d.children) {
+            d._children = d.children;
+            d._children.forEach(collapse);
+            d.children = null;
+        }
+    }
+
+    treemap(root);
+
+    const svg = d3.select("body").append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .style("font", "10px sans-serif");
+
+    const cell = svg.selectAll("g")
+        .data(root.descendants())
+        .join("g")
+        .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+    cell.append("rect")
+        .attr("id", d => (d.leafUid = d3.select(null)))
+        .attr("fill", d => d.children ? color(d.depth) : "white")
+        .attr("stroke", "#ccc")
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => d.y1 - d.y0)
+        .on("dblclick", (event, d) => toggleChildren(d));
+
+    cell.append("clipPath")
+        .attr("id", d => (d.clipUid = d3.select(null)))
+        .append("use")
+        .attr("xlink:href", d => d.leafUid.href);
+
+    cell.append("text")
+        .attr("clip-path", d => d.clipUid)
+        .selectAll("tspan")
+        .data(d => d.data.name.split(/(?=[A-Z][^A-Z])/g))
+        .join("tspan")
+        .attr("x", 3)
+        .attr("y", (d, i) => 13 + i * 10)
+        .text(d => d);
+
+    cell.filter(d => d.children).selectAll("tspan")
+        .attr("dy", "1.1em");
+
+    function toggleChildren(d) {
+        if (d.children) {
+            d._children = d.children;
+            d.children = null;
+        } else {
+            d.children = d._children;
+            d._children = null;
+        }
+        update(d);
+    }
+
+    function update(source) {
+        const nodes = treemap(root).descendants();
+
+        const cell = svg.selectAll("g")
+            .data(nodes, d => d.data.id);
+
+        const cellEnter = cell.enter().append("g")
+            .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+        cellEnter.append("rect")
+            .attr("id", d => (d.leafUid = d3.select(null)))
+            .attr("fill", d => d.children ? color(d.depth) : "white")
+            .attr("stroke", "#ccc")
+            .attr("width", d => d.x1 - d.x0)
+            .attr("height", d => d.y1 - d.y0)
+            .on("dblclick", (event, d) => toggleChildren(d));
+
+        cellEnter.append("clipPath")
+            .attr("id", d => (d.clipUid = d3.select(null)))
+            .append("use")
+            .attr("xlink:href", d => d.leafUid.href);
+
+        cellEnter.append("text")
+            .attr("clip-path", d => d.clipUid)
+            .selectAll("tspan")
+            .data(d => d.data.name.split(/(?=[A-Z][^A-Z])/g))
+            .join("tspan")
+            .attr("x", 3)
+            .attr("y", (d, i) => 13 + i * 10)
+            .text(d => d);
+
+        cell.filter(d => d.children).selectAll("tspan")
+            .attr("dy", "1.1em");
+
+        cell.transition()
+            .duration(750)
+            .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+        cell.select("rect")
+            .transition()
+            .duration(750)
+            .attr("width", d => d.x1 - d.x0)
+            .attr("height", d => d.y1 - d.y0);
+
+        cell.select("text")
+            .transition()
+            .duration(750)
+            .attr("clip-path", d => d.clipUid);
+
+        cell.exit().remove();
+    }
+
+    update(root);
+</script>
+</body>
+</html>

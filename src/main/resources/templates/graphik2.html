@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Project Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>Project Statistics</h1>
+
+<form th:action="@{/{projectId}/graphik}" th:object="${year}" th:method="get">
+    <label for="year">Enter Year:</label>
+    <input type="number" id="year" name="year">
+    <button type="submit">Submit</button>
+</form>
+
+<div th:if="${view == 'daily'}">
+    <canvas id="commitsChartDaily"></canvas>
+    <script th:inline="javascript">
+        const ctxDaily = document.getElementById('commitsChartDaily').getContext('2d');
+        /*<![CDATA[*/
+        const commitsDataDaily = /*[[${commitsByDay}]]*/ {};
+        /*]]>*/
+        const labelsDaily = Object.keys(commitsDataDaily);
+        const dataDaily = Object.values(commitsDataDaily);
+
+        new Chart(ctxDaily, {
+            type: 'line',
+            data: {
+                labels: labelsDaily,
+                datasets: [{
+                    label: 'Commits by Day',
+                    data: dataDaily,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</div>
+
+<div th:if="${view == 'monthly'}">
+    <canvas id="commitsChartMonthly"></canvas>
+    <script th:inline="javascript">
+        const ctxMonthly = document.getElementById('commitsChartMonthly').getContext('2d');
+        /*<![CDATA[*/
+        const commitsDataMonthly = /*[[${commitsByMonth}]]*/ {};
+        /*]]>*/
+        const labelsMonthly = Object.keys(commitsDataMonthly).map(month => new Date(2020, month - 1).toLocaleString('default', { month: 'long' }));
+        const dataMonthly = Object.values(commitsDataMonthly);
+
+        new Chart(ctxMonthly, {
+            type: 'bar',
+            data: {
+                labels: labelsMonthly,
+                datasets: [{
+                    label: 'Commits by Month',
+                    data: dataMonthly,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</div>
+
+<a th:href="@{/home}">Back to projects list</a>
+</body>
+</html>
