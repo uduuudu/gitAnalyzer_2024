@@ -3,9 +3,7 @@ package com.Dima.gitAnalyzer.controller;
 import com.Dima.gitAnalyzer.entity.ProjectEntity;
 import com.Dima.gitAnalyzer.repository.CommitRepository;
 import com.Dima.gitAnalyzer.repository.ProjectRepository;
-import com.Dima.gitAnalyzer.service.AuthorService;
-import com.Dima.gitAnalyzer.service.CommitService;
-import com.Dima.gitAnalyzer.service.ProjectService;
+import com.Dima.gitAnalyzer.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -28,40 +26,19 @@ public class CommitController {
     @Autowired
     ProjectRepository repositoryRepository;
     @Autowired
-    private CommitService commitService;
+    CommitService commitService;
+
+    @Autowired
+    FileService fileService;
+
+    @Autowired
+    ChangeService changeService;
 
     @Autowired
     ProjectService repositoryService;
 
     @Autowired
     AuthorService authorService;
-
-
-    @GetMapping("/")
-    public String startPage() {
-        return "redirect:/login";
-    }
-
-
-    @GetMapping("/statistic/{projectId}")
-    public String showVisualization(@PathVariable Long projectId, Model model) {
-        Map<String, Integer> commitsByDay = commitService.getCommitsByDay(projectId);
-        model.addAttribute("commitsByDay", commitsByDay);
-        Map<String, Long> commitCountMap = commitService.getCommitStatisticsByRepository(projectId);
-        model.addAttribute("commitCountMap", commitCountMap);
-        Map<String, Integer> avgSizeCommitsMap = commitService.getAvgCommSizeByRepository(projectId);
-        model.addAttribute("avgSizeCommitsMap", avgSizeCommitsMap);
-        List<Integer> years = commitService.getAllYears(projectId);
-        model.addAttribute("years", years);
-        model.addAttribute("projectId", projectId);
-
-        Map<String, Integer> fileActivity = commitService.getMostActiveFiles(projectId);
-        model.addAttribute("fileActivity", fileActivity);
-        Map<String, Integer> changeDistr = commitService.getChangeCountsByRepositoryId(projectId);
-        model.addAttribute("changeDistr", changeDistr);
-
-        return "visualization";
-    }
 
 
     @GetMapping("/{projectId}/years")
@@ -71,32 +48,13 @@ public class CommitController {
     }
 
 
-    @GetMapping("/repositoryRegistration")
-    public String showRegistrationForm() {
-        return "repositoryRegistration";
-    }
-
-    @PostMapping("/repositoryRegistration")
-    public String showRegistrationForm(@RequestParam String url,
-                                           @RequestParam String directory,
-                                           @RequestParam String name,
-                                           @RequestParam String branch,
-                                           Model model) {
-        repositoryService.registerRepository(url, directory, name, branch);
-        return "redirect:/home";
-    }
 
     //////////////////////////////////////////
     // 1 мая
     //////////////////////////////////////////
 
 
-    @GetMapping("/home")
-    public String showHomePage(Model model) {
-        List<ProjectEntity> repositories = repositoryRepository.findAll();
-        model.addAttribute("repositories", repositories);
-        return "home";
-    }
+
 
 
     //27.04.2024

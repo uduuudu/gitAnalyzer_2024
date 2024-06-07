@@ -169,28 +169,7 @@ public class CommitService {
         changeRepository.save(changeEntity);
     }
 
-    public Map<String, Integer> getChangeCountsByRepositoryId(Long repositoryId) {
-        List<Object[]> results = commitRepository.findChangeCountsByRepositoryId(repositoryId);
-        Map<String, Integer> resultMap = new HashMap<>();
-        for (Object[] result : results) {
-            String changeType = (String) result[0];
-            Integer changeCount = ((Number) result[1]).intValue();
-            resultMap.put(changeType, changeCount);
-        }
-        return resultMap;
-    }
 
-    public Map<String, Integer> getMostActiveFiles(Long projectId) {
-        List<Object[]> results = commitRepository.findMostActiveFiles(projectId);
-        Map<String, Integer> activeFilesMap = new HashMap<>();
-
-        for (Object[] result : results) {
-            String filePath = (String) result[0];
-            Integer changeCount = ((Number) result[1]).intValue();
-            activeFilesMap.put(filePath, changeCount);
-        }
-        return activeFilesMap;
-    }
 
     // Метод для получения всех уникальных годов коммитов
     public List<Integer> getAllYears(Long repositoryId) {
