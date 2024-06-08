@@ -35,8 +35,6 @@ public class RegistrationController {
             return "registration";
         }
 
-        System.out.println(user.getUsername() + ' ' + user.getPassword());
-        user.setActive(true);
         userService.registerUser(user.getUsername(), user.getPassword());
 
         return "redirect:/login";

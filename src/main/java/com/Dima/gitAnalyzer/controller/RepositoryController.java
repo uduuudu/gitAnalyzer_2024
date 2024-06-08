@@ -7,12 +7,10 @@ import com.Dima.gitAnalyzer.service.CommitService;
 import com.Dima.gitAnalyzer.service.FileService;
 import com.Dima.gitAnalyzer.service.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -35,6 +33,7 @@ public class RepositoryController {
 
     @Autowired
     ProjectRepository projectRepository;
+
 
 
     @GetMapping("/")
@@ -83,6 +82,13 @@ public class RepositoryController {
                                        Model model) {
         projectService.registerRepository(url, directory, name, branch);
         return "redirect:/home";
+    }
+
+
+    @DeleteMapping("/deleteRepository/{id}")
+    public ResponseEntity<Void> deleteRepository(@PathVariable Long id) {
+        projectService.deleteRepositoryById(id);
+        return ResponseEntity.noContent().build();
     }
 
 }

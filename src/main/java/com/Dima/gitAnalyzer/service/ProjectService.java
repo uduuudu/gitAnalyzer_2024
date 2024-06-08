@@ -3,6 +3,7 @@ package com.Dima.gitAnalyzer.service;
 import com.Dima.gitAnalyzer.entity.ProjectEntity;
 import com.Dima.gitAnalyzer.repository.CommitRepository;
 import com.Dima.gitAnalyzer.repository.ProjectRepository;
+import jakarta.transaction.Transactional;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.*;
 import org.eclipse.jgit.lib.Repository;
@@ -12,6 +13,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 
@@ -26,6 +29,12 @@ public class ProjectService {
 
     @Autowired
     CommitRepository commitRepository;
+
+
+    @Transactional
+    public void deleteRepositoryById(Long id) {
+        repositoryRepository.deleteById(id);
+    }
 
     public void registerRepository(String repositoryUrl, String path, String name, String branch) {
         try {
@@ -57,8 +66,9 @@ public class ProjectService {
         }
     }
 
-    @Scheduled(cron = "0 0 0 */30 * ?")
+    @Scheduled(cron = "0 0 0 1 */1 *")
     public void updateRepository() {
+        System.out.println("Обновление статистических данных: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         List<ProjectEntity> repositories = repositoryRepository.findAll();
         for (ProjectEntity repositoryEntity : repositories) {
             String repositoryPath = repositoryEntity.getDirectory();

@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <title>Анализ Гит Репозиториев</title>
     <link rel="stylesheet" type="text/css" th:href="@{style.css}">
+    <script>
+        function deleteRepository(id) {
+            fetch('/deleteRepository/' + id, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Ошибка при удалении репозитория');
+                }
+            });
+        }
+    </script>
 </head>
 <body>
 <div class="logout-form">
@@ -30,9 +46,7 @@
         <td><a th:href="@{'/statistic/' + ${repository.id}}" th:text="${repository.name}"></a></td>
         <td><a th:text="${repository.analyze_branch}"></a></td>
         <td>
-            <form th:action="@{'/deleteRepository/' + ${repository.id}}" method="post" style="display:inline;">
-                <button type="submit" style="background:none; border:none; color:red; cursor:pointer;">&times;</button>
-            </form>
+            <button type="button" th:onclick="'deleteRepository(' + ${repository.id} + ')'" style="background:none; border:none; color:red; cursor:pointer;">&times;</button>
         </td>
     </tr>
     </tbody>

@@ -3,6 +3,7 @@ package com.Dima.gitAnalyzer.service;
 import com.Dima.gitAnalyzer.entity.User;
 import com.Dima.gitAnalyzer.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ public class UserService {
         System.out.println(encodedPassword + ' ' + username);
         User user = new User(username, encodedPassword, true);
         userRepository.save(user);
+        userRepository.addAuthority(username);
     }
 
 

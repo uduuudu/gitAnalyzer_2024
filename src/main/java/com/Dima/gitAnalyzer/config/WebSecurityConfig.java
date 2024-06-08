@@ -32,6 +32,7 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests((requests) -> requests
                         .requestMatchers("/registration").permitAll()
                         .anyRequest().authenticated()
@@ -71,7 +72,6 @@ public class WebSecurityConfig {
     @Bean
     public JdbcUserDetailsManager jdbcUserDetailsManager(DataSource dataSource) {
         JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
-        jdbcUserDetailsManager.setUsersByUsernameQuery("select username, password, enabled from users where username=?");
         return jdbcUserDetailsManager;
     }
 

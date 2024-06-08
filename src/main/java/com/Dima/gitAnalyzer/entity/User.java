@@ -10,10 +10,10 @@ public class User {
     public User() {
     }
 
-    public User(String username, String password, boolean active) {
+    public User(String username, String password, boolean en) {
         this.username = username;
         this.password = password;
-        this.active = active;
+        this.enabled = en;
     }
 
     @Id
@@ -27,7 +27,7 @@ public class User {
     private String password;
 
     @Column(nullable = false)
-    private boolean active;
+    private boolean enabled;
 
 
     public Long getId() {
@@ -53,11 +53,12 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
-    public boolean isActive() {
-        return active;
+
+    public boolean isEnabled() {
+        return enabled;
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }
