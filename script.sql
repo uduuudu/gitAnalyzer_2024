@@ -49,3 +49,19 @@ CREATE TRIGGER delete_authors_trigger
     AFTER DELETE ON commits
     FOR EACH ROW
     EXECUTE FUNCTION delete_authors();
+
+
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    enabled BOOLEAN NOT NULL
+);
+
+CREATE TABLE authorities
+(
+    username VARCHAR(255) NOT NULL UNIQUE,
+    authority VARCHAR(255) NOT NULL
+);
+
